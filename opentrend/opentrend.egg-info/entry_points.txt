@@ -1,0 +1,2 @@
+[console_scripts]
+opentrend = opentrend.cli:main
