@@ -1,0 +1,34 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data folders (too large for git)
+data/hoodies/images/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Prophet models (can be regenerated)
+*.pkl
+!trend_clusterer_model.pkl
+
+# Large generated images (keep key ones)
+# Uncomment if you want to exclude images:
+# *.png
