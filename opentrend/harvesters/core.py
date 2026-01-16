@@ -122,7 +122,7 @@ class FashionItemModel(Base):
     processed_at = Column(DateTime)
     
     # Metadata (JSON for flexibility)
-    metadata = Column(JSON)
+    extra_data = Column(JSON)
     
     # Indexes for common queries
     __table_args__ = (
@@ -301,7 +301,7 @@ class DatabaseManager:
                 predicted_labels=','.join(item.predicted_labels) if item.predicted_labels else '',
                 category=item.category,
                 engagement=item.engagement,
-                metadata=item.metadata
+                extra_data=item.metadata
             )
             self._write_queue.put_nowait(model)
             return True

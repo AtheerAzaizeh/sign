@@ -1,40 +1,54 @@
 """
 opentrend/harvesters/__init__.py
 Global Fashion Brain - Harvester Plugin Registry
+
+Production-grade plugin system with:
+- SQLAlchemy ORM for database abstraction
+- Queue-based writes for scalability
+- Resilient GlobalHarvester with error isolation
 """
 
-from .base import (
+# Core infrastructure
+from .core import (
     FashionSource,
     FashionItem,
-    HarvestDatabase,
-    GlobalHarvester
+    SourceStatus,
+    GlobalHarvester,
+    DatabaseManager,
+    FashionItemModel,
 )
 
+# Source plugins
 from .street_signal import RedditHarvester, PinterestHarvester
 from .runway import VogueRunwayHarvester, TheImpressionHarvester
 from .visual_vibe import UnsplashHarvester, PexelsHarvester
 from .marketplace import DepopHarvester, GrailedHarvester
 
 __all__ = [
-    # Base classes
+    # Core
     'FashionSource',
     'FashionItem',
-    'HarvestDatabase',
+    'SourceStatus',
     'GlobalHarvester',
+    'DatabaseManager',
+    'FashionItemModel',
     
-    # Street Signal (Social Media)
+    # Type A: Social Demand
     'RedditHarvester',
     'PinterestHarvester',
     
-    # Runway (High Fashion)
+    # Type B: High Fashion Supply
     'VogueRunwayHarvester',
     'TheImpressionHarvester',
     
-    # Visual Vibe (Open Source)
+    # Type C: Visuals
     'UnsplashHarvester',
     'PexelsHarvester',
     
-    # Marketplace (Hype)
+    # Type D: Market Validation
     'DepopHarvester',
     'GrailedHarvester',
 ]
+
+# Version
+__version__ = "1.0.0"

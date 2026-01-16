@@ -1,0 +1,6 @@
+2026-01-16 06:47:17,077 - harvesters.core - INFO - Database initialized: sqlite:///./data/production_test.db
+2026-01-16 06:47:18,077 - harvesters.core - INFO - Database manager shutdown complete
+2026-01-16 06:47:18,078 - harvesters.core - INFO - Database initialized: sqlite:///./data/production_test.db
+2026-01-16 06:47:18,078 - harvesters.core - INFO - GlobalHarvester initialized (workers=4)
+2026-01-16 06:47:18,079 - harvesters.core - INFO - Registered source: unsplash
+2026-01-16 06:47:18,079 - harvesters.core - INFO - Registered source: pinterest
