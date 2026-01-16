@@ -1,0 +1,125 @@
+{
+  "generated_at": "2026-01-16T06:20:38.725951",
+  "engine": "BreakthroughPredictionEngine",
+  "models": [
+    "LSTM",
+    "Transformer",
+    "Prophet",
+    "VisionAnalyzer",
+    "EarlySignalDetector"
+  ],
+  "metrics": {
+    "average_confidence": 0.551,
+    "high_confidence_count": 1,
+    "breakthrough_count": 0,
+    "total_predictions": 5
+  },
+  "breakthroughs": [],
+  "all_predictions": [
+    {
+      "name": "Mushroom Leather",
+      "category": "fashion",
+      "current_value": 87.8,
+      "predicted_value": 87.1,
+      "growth_percent": -0.8,
+      "confidence": 0.559,
+      "is_breakthrough": 0,
+      "time_to_peak_weeks": 1,
+      "risk_level": "medium",
+      "model_contributions": {
+        "lstm": 66.0035629272461,
+        "transformer": 66.69849395751953,
+        "prophet": 117.42456434134506,
+        "early_signal": 99.99984502792358
+      },
+      "signals": [
+        "EMERGING_TREND_DETECTED",
+        "RECENT_ACCELERATION"
+      ]
+    },
+    {
+      "name": "Sage Green",
+      "category": "fashion",
+      "current_value": 68.0,
+      "predicted_value": 63.9,
+      "growth_percent": -6.1,
+      "confidence": 0.493,
+      "is_breakthrough": false,
+      "time_to_peak_weeks": 1,
+      "risk_level": "high",
+      "model_contributions": {
+        "lstm": 66.00357055664062,
+        "transformer": 66.69832611083984,
+        "prophet": 77.04609982988825,
+        "early_signal": 12.290770560503006
+      },
+      "signals": []
+    },
+    {
+      "name": "Ocean Teal",
+      "category": "fashion",
+      "current_value": 80.1,
+      "predicted_value": 74.6,
+      "growth_percent": -6.9,
+      "confidence": 0.728,
+      "is_breakthrough": 0,
+      "time_to_peak_weeks": 1,
+      "risk_level": "medium",
+      "model_contributions": {
+        "lstm": 66.00357055664062,
+        "transformer": 66.69844055175781,
+        "prophet": 80.00944757180379,
+        "early_signal": 99.53100085258484
+      },
+      "signals": [
+        "EMERGING_TREND_DETECTED",
+        "RECENT_ACCELERATION"
+      ]
+    },
+    {
+      "name": "Chrome Gold",
+      "category": "fashion",
+      "current_value": 68.3,
+      "predicted_value": 60.8,
+      "growth_percent": -10.9,
+      "confidence": 0.415,
+      "is_breakthrough": false,
+      "time_to_peak_weeks": 1,
+      "risk_level": "high",
+      "model_contributions": {
+        "lstm": 66.00357055664062,
+        "transformer": 66.69873046875,
+        "prophet": 71.57724427987634,
+        "early_signal": 0.6960353814065456
+      },
+      "signals": [
+        "RECENT_ACCELERATION"
+      ]
+    },
+    {
+      "name": "Digital Lavender",
+      "category": "fashion",
+      "current_value": 70.2,
+      "predicted_value": 61.1,
+      "growth_percent": -12.9,
+      "confidence": 0.558,
+      "is_breakthrough": false,
+      "time_to_peak_weeks": 1,
+      "risk_level": "medium",
+      "model_contributions": {
+        "lstm": 66.00357055664062,
+        "transformer": 66.69853210449219,
+        "prophet": 67.51110372968553,
+        "early_signal": 15.749508142471313
+      },
+      "signals": []
+    }
+  ],
+  "model_weights": {
+    "lstm": 0.25,
+    "transformer": 0.25,
+    "prophet": 0.3,
+    "vision": 0.1,
+    "early_signal": 0.1
+  }
+}

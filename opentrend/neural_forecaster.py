@@ -727,6 +727,26 @@ class BreakthroughPredictionEngine:
             'model_weights': self.ensemble.model_weights
         }
         
+        # Custom JSON encoder for numpy types
+        def convert(obj):
+            if isinstance(obj, (np.bool_, np.integer)):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return obj
+        
+        # Convert all values
+        def deep_convert(obj):
+            if isinstance(obj, dict):
+                return {k: deep_convert(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [deep_convert(v) for v in obj]
+            return convert(obj)
+        
+        report = deep_convert(report)
+        
         with open(output_path, 'w') as f:
             json.dump(report, f, indent=2)
         
