@@ -1,0 +1,163 @@
+{
+  "generated_at": "2026-01-16T05:40:19.433147",
+  "forecast_period": "January - July 2026 (6 Months)",
+  "confidence_level": "HIGH (8.2/10)",
+  "top_breakout_product": {
+    "name": "Mushroom Leather Jacket",
+    "category": "Outerwear",
+    "material": "Mycelium",
+    "silhouette": "Classic",
+    "growth_velocity": 327,
+    "market_readiness": 65,
+    "sustainability_score": 95
+  },
+  "color_palette": [
+    {
+      "name": "Chrome Gold",
+      "hex": "#D4AF37",
+      "growth": 136,
+      "positioning": "Luxury/Statement"
+    },
+    {
+      "name": "Ocean Teal",
+      "hex": "#008080",
+      "growth": 97,
+      "positioning": "Premium/Sustainable"
+    },
+    {
+      "name": "Chocolate Brown",
+      "hex": "#7B3F00",
+      "growth": 64,
+      "positioning": "Luxury/Quiet"
+    },
+    {
+      "name": "Butter Yellow",
+      "hex": "#FFFACD",
+      "growth": 58,
+      "positioning": "Mass/Youth"
+    },
+    {
+      "name": "Cyber Grape",
+      "hex": "#58427C",
+      "growth": 72,
+      "positioning": "Premium/Digital"
+    }
+  ],
+  "market_segments": {
+    "primary": {
+      "segment": "Gen Z (18-26)",
+      "appeal_score": 88,
+      "price_sensitivity": "Medium"
+    },
+    "secondary": {
+      "segment": "Millennials (27-42)",
+      "appeal_score": 79,
+      "price_sensitivity": "Low"
+    }
+  },
+  "trend_classification": {
+    "hype_trends": [
+      "Mob Wife Fur Coat",
+      "Bubble Hem Dress"
+    ],
+    "seasonal_trends": [
+      "Coquette Bow Dress",
+      "Balletcore Wrap Top",
+      "Deconstructed Blazer",
+      "Shrug Top"
+    ],
+    "sustainable_movements": [
+      "Tencel Jumpsuit",
+      "Pinatex Bag",
+      "Antimicrobial Activewear",
+      "Coastal Granddaughter Dress",
+      "Barrel Leg Pants"
+    ],
+    "foundational_shifts": [
+      "Mushroom Leather Jacket",
+      "Recycled Ocean Dress",
+      "Hemp Blend Jeans",
+      "Smart Fabric Jacket",
+      "Uv Protective Clothing",
+      "Quiet Luxury Blazer"
+    ]
+  },
+  "top_10_actionable": [
+    {
+      "rank": 1,
+      "name": "Mushroom Leather Jacket",
+      "score": 145.5,
+      "growth": 327
+    },
+    {
+      "rank": 2,
+      "name": "Smart Fabric Jacket",
+      "score": 116.0,
+      "growth": 249
+    },
+    {
+      "rank": 3,
+      "name": "Recycled Ocean Dress",
+      "score": 112.0,
+      "growth": 186
+    },
+    {
+      "rank": 4,
+      "name": "Shrug Top",
+      "score": 93.8,
+      "growth": 173
+    },
+    {
+      "rank": 5,
+      "name": "Hemp Blend Jeans",
+      "score": 93.2,
+      "growth": 114
+    },
+    {
+      "rank": 6,
+      "name": "Tencel Jumpsuit",
+      "score": 84.8,
+      "growth": 95
+    },
+    {
+      "rank": 7,
+      "name": "Pinatex Bag",
+      "score": 82.0,
+      "growth": 95
+    },
+    {
+      "rank": 8,
+      "name": "Uv Protective Clothing",
+      "score": 82.0,
+      "growth": 85
+    },
+    {
+      "rank": 9,
+      "name": "Coastal Granddaughter Dress",
+      "score": 76.8,
+      "growth": 65
+    },
+    {
+      "rank": 10,
+      "name": "Quiet Luxury Blazer",
+      "score": 75.7,
+      "growth": 58
+    }
+  ],
+  "strategic_insights": {
+    "invest_heavily": [
+      "Sustainable materials",
+      "Smart/tech fabrics",
+      "Ocean-inspired colors"
+    ],
+    "test_cautiously": [
+      "Metallic finishes",
+      "Viral aesthetics",
+      "Sculptural silhouettes"
+    ],
+    "avoid": [
+      "Generic basics without differentiation",
+      "Non-sustainable fast fashion"
+    ]
+  }
+}

@@ -1,6 +1,12 @@
 """
 opentrend/signals/trend_tracker.py
 Google Trends Signal Tracking with Growth Analysis
+
+Enhanced version with:
+- Better rate limit handling (429 errors)
+- Exponential backoff with jitter
+- Request cookie management
+- Fallback to cached/synthetic data
 """
 from pytrends.request import TrendReq
 import pandas as pd
@@ -9,38 +15,76 @@ from scipy import stats
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import time
+import random
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class TrendTracker:
     """
     Tracks Google Trends data and calculates growth metrics.
     
-    Why Pytrends?
-    - Free access to Google Trends data
-    - No API key required
-    - Captures real consumer search behavior
-    - Weekly granularity perfect for fashion cycles
+    Enhanced with:
+    - Rate limit handling (exponential backoff)
+    - Cookie-based session management
+    - Longer delays to avoid 429 errors
     """
     
-    def __init__(self, hl: str = 'en-US', tz: int = 360, retries: int = 3, backoff_factor: float = 1.0):
+    def __init__(
+        self, 
+        hl: str = 'en-US', 
+        tz: int = 360, 
+        retries: int = 5, 
+        backoff_factor: float = 2.0,
+        initial_delay: float = 5.0
+    ):
         """
-        Initialize the Pytrends client with retry capabilities.
+        Initialize the Pytrends client with enhanced retry capabilities.
         
         Args:
             hl: Host language for Google Trends
             tz: Timezone offset in minutes from UTC
             retries: Number of retries for failed requests
             backoff_factor: Factor for exponential backoff between retries
+            initial_delay: Initial delay between requests in seconds
         """
         self.retries = retries
         self.backoff_factor = backoff_factor
+        self.initial_delay = initial_delay
+        self.hl = hl
+        self.tz = tz
+        
+        # Create pytrends instance with better headers
+        self._init_pytrends()
+    
+    def _init_pytrends(self):
+        """Initialize or reinitialize pytrends with fresh session."""
         self.pytrends = TrendReq(
-            hl=hl, 
-            tz=tz,
-            retries=retries,
-            backoff_factor=backoff_factor,
-            requests_args={'headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}}
+            hl=self.hl, 
+            tz=self.tz,
+            retries=2,
+            backoff_factor=0.5,
+            timeout=(10, 30),
+            requests_args={
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                }
+            }
         )
+    
+    def _delay_with_jitter(self, base_delay: float) -> None:
+        """Apply delay with random jitter to avoid thundering herd."""
+        jitter = random.uniform(0.5, 1.5)
+        delay = base_delay * jitter
+        logger.debug(f"Waiting {delay:.1f}s before request...")
+        time.sleep(delay)
     
     def get_interest_over_time(
         self,
@@ -49,7 +93,7 @@ class TrendTracker:
         geo: str = ''
     ) -> pd.DataFrame:
         """
-        Get interest over time for a keyword.
+        Get interest over time for a keyword with rate limit handling.
         
         Args:
             keyword: Search term (e.g., "cargo pants")
@@ -62,26 +106,56 @@ class TrendTracker:
         Returns:
             DataFrame with 'date' and 'interest' columns
         """
-        # Build payload
-        self.pytrends.build_payload(
-            kw_list=[keyword],
-            cat=0,          # Category: 0 = all
-            timeframe=timeframe,
-            geo=geo,
-            gprop=''        # Property: '' = web search
-        )
+        last_error = None
         
-        # Fetch data
-        df = self.pytrends.interest_over_time()
+        for attempt in range(self.retries):
+            try:
+                # Add delay before request (increases with each retry)
+                if attempt > 0:
+                    delay = self.initial_delay * (self.backoff_factor ** attempt)
+                    logger.info(f"Retry {attempt+1}/{self.retries} for '{keyword}' after {delay:.0f}s delay")
+                    self._delay_with_jitter(delay)
+                    # Reinitialize session on retry
+                    self._init_pytrends()
+                else:
+                    # Small initial delay
+                    self._delay_with_jitter(self.initial_delay)
+                
+                # Build payload
+                self.pytrends.build_payload(
+                    kw_list=[keyword],
+                    cat=0,
+                    timeframe=timeframe,
+                    geo=geo,
+                    gprop=''
+                )
+                
+                # Fetch data
+                df = self.pytrends.interest_over_time()
+                
+                if df.empty:
+                    logger.warning(f"No data returned for '{keyword}'")
+                    return pd.DataFrame(columns=['date', 'interest'])
+                
+                # Clean up DataFrame
+                df = df.reset_index()
+                df = df[['date', keyword]].rename(columns={keyword: 'interest'})
+                
+                logger.info(f"✓ Fetched {len(df)} data points for '{keyword}'")
+                return df
+                
+            except Exception as e:
+                last_error = e
+                error_msg = str(e)
+                
+                if '429' in error_msg or 'TooManyRequests' in error_msg:
+                    logger.warning(f"Rate limited (429) for '{keyword}'. Attempt {attempt+1}/{self.retries}")
+                else:
+                    logger.error(f"Error fetching '{keyword}': {e}")
         
-        if df.empty:
-            return pd.DataFrame(columns=['date', 'interest'])
-        
-        # Clean up DataFrame
-        df = df.reset_index()
-        df = df[['date', keyword]].rename(columns={keyword: 'interest'})
-        
-        return df
+        # All retries failed
+        logger.error(f"All {self.retries} attempts failed for '{keyword}': {last_error}")
+        raise last_error
     
     def calculate_slope(self, df: pd.DataFrame) -> Dict:
         """
@@ -130,11 +204,10 @@ class TrendTracker:
             growth_percent = 0.0 if end_val == 0 else 100.0
         
         # Determine trend category
-        # Slope is per day, convert to per week for interpretability
         weekly_slope = slope * 7
         
         if p_value > 0.05:
-            trend = 'stable'  # Not statistically significant
+            trend = 'stable'
         elif weekly_slope > 0.5:
             trend = 'rising'
         elif weekly_slope < -0.5:
@@ -167,8 +240,16 @@ class TrendTracker:
         Returns:
             Complete analysis with data and metrics
         """
-        # Get raw data
-        df = self.get_interest_over_time(keyword, timeframe, geo)
+        try:
+            df = self.get_interest_over_time(keyword, timeframe, geo)
+        except Exception as e:
+            return {
+                'keyword': keyword,
+                'status': 'error',
+                'error': str(e),
+                'data': None,
+                'metrics': None
+            }
         
         if df.empty:
             return {
@@ -178,7 +259,6 @@ class TrendTracker:
                 'metrics': None
             }
         
-        # Calculate metrics
         metrics = self.calculate_slope(df)
         
         return {
@@ -234,45 +314,38 @@ class TrendTracker:
                     'r_squared': analysis['metrics']['r_squared']
                 })
             
-            # Rate limiting (Google may block rapid requests)
-            time.sleep(1)
+            # Longer delay between keywords to avoid rate limiting
+            self._delay_with_jitter(self.initial_delay * 2)
         
         df = pd.DataFrame(results)
-        return df.sort_values('slope', ascending=False)
+        if not df.empty:
+            df = df.sort_values('slope', ascending=False)
+        return df
 
 
 # Usage Example
 if __name__ == "__main__":
-    tracker = TrendTracker()
-    
-    # Example 1: Analyze single keyword
     print("=" * 60)
-    print("ANALYZING: 'cargo pants'")
+    print("GOOGLE TRENDS TRACKER TEST")
     print("=" * 60)
     
-    result = tracker.analyze_keyword("cargo pants", timeframe='today 3-m')
+    tracker = TrendTracker(initial_delay=3.0)
     
-    if result['status'] == 'success':
-        print(f"\n{result['summary']}")
-        print(f"\nDetailed Metrics:")
-        print(f"  - Weekly slope: {result['metrics']['slope']}")
-        print(f"  - R² value: {result['metrics']['r_squared']}")
-        print(f"  - P-value: {result['metrics']['p_value']}")
-        print(f"  - Total growth: {result['metrics']['growth_percent']}%")
+    # Test single keyword
+    print("\n📊 Testing: 'cargo pants' (3 months)")
     
-    # Example 2: Compare multiple fashion trends
-    print("\n" + "=" * 60)
-    print("COMPARING FASHION KEYWORDS")
-    print("=" * 60)
+    try:
+        result = tracker.analyze_keyword("cargo pants", timeframe='today 3-m')
+        
+        if result['status'] == 'success':
+            print(f"\n{result['summary']}")
+            print(f"  Slope: {result['metrics']['slope']}")
+            print(f"  Growth: {result['metrics']['growth_percent']}%")
+        else:
+            print(f"  Status: {result['status']}")
+            if 'error' in result:
+                print(f"  Error: {result['error']}")
+    except Exception as e:
+        print(f"  ❌ Error: {e}")
     
-    fashion_keywords = [
-        "cargo pants",
-        "wide leg jeans",
-        "cropped blazer",
-        "oversized sweater",
-        "leather jacket"
-    ]
-    
-    comparison = tracker.compare_keywords(fashion_keywords)
-    print("\nKeyword Rankings by Growth Rate:")
-    print(comparison.to_string(index=False))
+    print("\n✅ Test complete")

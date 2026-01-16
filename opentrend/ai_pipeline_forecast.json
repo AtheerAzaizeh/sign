@@ -1,0 +1,83 @@
+{
+  "timestamp": "2026-01-16T05:52:07.508049",
+  "pipeline": {
+    "step1": "FashionFeatureExtractor (ResNet50)",
+    "step2": "TrendClusterer (K-Means + PCA)",
+    "step3": "TrendForecaster (Prophet)"
+  },
+  "dataset": {
+    "images": 100,
+    "categories": 10
+  },
+  "features": {
+    "dimensions": 2048,
+    "pca_reduced": 50
+  },
+  "clusters": 8,
+  "forecasts": [
+    {
+      "cluster_id": 1,
+      "label": "Maxi Dress",
+      "count": 9,
+      "current": 75.7,
+      "forecast": 86.0,
+      "growth": 13.7
+    },
+    {
+      "cluster_id": 4,
+      "label": "Halter Top",
+      "count": 10,
+      "current": 63.2,
+      "forecast": 71.0,
+      "growth": 12.3
+    },
+    {
+      "cluster_id": 0,
+      "label": "Oversized Blazer",
+      "count": 41,
+      "current": 59.9,
+      "forecast": 66.4,
+      "growth": 10.9
+    },
+    {
+      "cluster_id": 5,
+      "label": "Crochet Dress",
+      "count": 1,
+      "current": 67.6,
+      "forecast": 73.4,
+      "growth": 8.7
+    },
+    {
+      "cluster_id": 7,
+      "label": "Wide Leg Pants",
+      "count": 20,
+      "current": 82.7,
+      "forecast": 87.9,
+      "growth": 6.2
+    },
+    {
+      "cluster_id": 2,
+      "label": "Crop Top",
+      "count": 1,
+      "current": 81.7,
+      "forecast": 86.4,
+      "growth": 5.7
+    },
+    {
+      "cluster_id": 3,
+      "label": "Crop Top",
+      "count": 17,
+      "current": 81.7,
+      "forecast": 86.4,
+      "growth": 5.7
+    },
+    {
+      "cluster_id": 6,
+      "label": "Crop Top",
+      "count": 1,
+      "current": 81.7,
+      "forecast": 86.4,
+      "growth": 5.7
+    }
+  ]
+}

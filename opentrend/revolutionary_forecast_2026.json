@@ -1,0 +1,444 @@
+{
+  "generated_at": "2026-01-16T05:26:01.368773",
+  "forecast_type": "Revolutionary Fashion Trends",
+  "forecast_period": "Next 6 Months (Jan-Jul 2026)",
+  "breakthrough_products": [
+    {
+      "rank": 1,
+      "product": "mushroom leather jacket",
+      "description": "Mycelium-based sustainable leather",
+      "growth": 327.3,
+      "confidence": "experimental"
+    },
+    {
+      "rank": 2,
+      "product": "smart fabric jacket",
+      "description": "Temperature-regulating materials",
+      "growth": 249.5,
+      "confidence": "experimental"
+    },
+    {
+      "rank": 3,
+      "product": "shrug top",
+      "description": "Cropped bolero-style layering piece",
+      "growth": 172.6,
+      "confidence": "medium"
+    },
+    {
+      "rank": 4,
+      "product": "hemp blend jeans",
+      "description": "Sustainable denim alternative",
+      "growth": 113.6,
+      "confidence": "medium"
+    },
+    {
+      "rank": 5,
+      "product": "mob wife fur coat",
+      "description": "Bold maximalist statement outerwear",
+      "growth": 101.5,
+      "confidence": "medium"
+    },
+    {
+      "rank": 6,
+      "product": "barrel leg pants",
+      "description": "Wide through thigh, tapered at ankle",
+      "growth": 93.6,
+      "confidence": "medium"
+    },
+    {
+      "rank": 7,
+      "product": "unisex oversized shirt",
+      "description": "Inclusive sizing, minimal design",
+      "growth": 91.2,
+      "confidence": "high"
+    },
+    {
+      "rank": 8,
+      "product": "hanbok inspired skirt",
+      "description": "Korean traditional silhouette modernized",
+      "growth": 41.9,
+      "confidence": "high"
+    },
+    {
+      "rank": 9,
+      "product": "cocoon coat",
+      "description": "Oversized rounded silhouette",
+      "growth": 39.0,
+      "confidence": "high"
+    },
+    {
+      "rank": 10,
+      "product": "pinatex bag",
+      "description": "Pineapple leaf leather alternative",
+      "growth": 24.0,
+      "confidence": "medium"
+    },
+    {
+      "rank": 11,
+      "product": "tencel jumpsuit",
+      "description": "Eucalyptus-based sustainable fiber",
+      "growth": 21.2,
+      "confidence": "high"
+    },
+    {
+      "rank": 12,
+      "product": "coastal granddaughter dress",
+      "description": "Relaxed linen heritage aesthetic",
+      "growth": 2.7,
+      "confidence": "high"
+    },
+    {
+      "rank": 13,
+      "product": "antimicrobial activewear",
+      "description": "Odor-resistant tech fabrics",
+      "growth": -0.2,
+      "confidence": "high"
+    },
+    {
+      "rank": 14,
+      "product": "genderless tailored trousers",
+      "description": "Universal fit tailoring",
+      "growth": -3.3,
+      "confidence": "high"
+    },
+    {
+      "rank": 15,
+      "product": "balletcore wrap top",
+      "description": "Ballet-inspired aesthetic",
+      "growth": -4.7,
+      "confidence": "high"
+    }
+  ],
+  "breakthrough_colors": [
+    {
+      "rank": 1,
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "description": "Luxe metallic statement",
+      "growth": 136.3
+    },
+    {
+      "rank": 2,
+      "color": "Viva Magenta",
+      "hex": "#BB2649",
+      "description": "Bold expressive red-pink",
+      "growth": 98.6
+    },
+    {
+      "rank": 3,
+      "color": "Ocean Teal",
+      "hex": "#008080",
+      "description": "Deep sea sustainable connection",
+      "growth": 97.1
+    },
+    {
+      "rank": 4,
+      "color": "Cyber Grape",
+      "hex": "#58427C",
+      "description": "Deep digital purple",
+      "growth": 72.0
+    },
+    {
+      "rank": 5,
+      "color": "Chocolate Brown",
+      "hex": "#7B3F00",
+      "description": "Rich espresso revival",
+      "growth": 63.8
+    },
+    {
+      "rank": 6,
+      "color": "Sunset Coral",
+      "hex": "#FF7F50",
+      "description": "Vibrant warm optimism",
+      "growth": 46.7
+    },
+    {
+      "rank": 7,
+      "color": "Holographic",
+      "hex": "#8B00FF",
+      "description": "Color-shifting iridescence",
+      "growth": 14.8
+    },
+    {
+      "rank": 8,
+      "color": "Desert Sand",
+      "hex": "#EDC9AF",
+      "description": "Earthy neutral evolution",
+      "growth": 1.4
+    },
+    {
+      "rank": 9,
+      "color": "Peach Fuzz",
+      "hex": "#FFBE98",
+      "description": "Pantone 2024 extending into 2026",
+      "growth": -11.0
+    },
+    {
+      "rank": 10,
+      "color": "Moss Green",
+      "hex": "#8A9A5B",
+      "description": "Deep forest tone",
+      "growth": -14.9
+    },
+    {
+      "rank": 11,
+      "color": "Butter Yellow",
+      "hex": "#FFFACD",
+      "description": "Soft optimistic neutral",
+      "growth": -21.4
+    },
+    {
+      "rank": 12,
+      "color": "Apricot Crush",
+      "hex": "#E4A672",
+      "description": "Warm evolved coral",
+      "growth": -24.4
+    },
+    {
+      "rank": 13,
+      "color": "Digital Lavender",
+      "hex": "#E6E6FA",
+      "description": "Tech-meets-calm meta color",
+      "growth": -30.6
+    },
+    {
+      "rank": 14,
+      "color": "Lime Shock",
+      "hex": "#C5FF00",
+      "description": "Gen-Z neon statement",
+      "growth": -63.9
+    },
+    {
+      "rank": 15,
+      "color": "Liquid Silver",
+      "hex": "#C0C0C0",
+      "description": "Futuristic metallic finish",
+      "growth": -69.2
+    }
+  ],
+  "top_combinations": [
+    {
+      "rank": 1,
+      "product": "mushroom leather jacket",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 305.9
+    },
+    {
+      "rank": 2,
+      "product": "mushroom leather jacket",
+      "color": "Viva Magenta",
+      "hex": "#BB2649",
+      "synergy_score": 255.5
+    },
+    {
+      "rank": 3,
+      "product": "mushroom leather jacket",
+      "color": "Ocean Teal",
+      "hex": "#008080",
+      "synergy_score": 254.6
+    },
+    {
+      "rank": 4,
+      "product": "mushroom leather jacket",
+      "color": "Cyber Grape",
+      "hex": "#58427C",
+      "synergy_score": 239.6
+    },
+    {
+      "rank": 5,
+      "product": "mushroom leather jacket",
+      "color": "Chocolate Brown",
+      "hex": "#7B3F00",
+      "synergy_score": 234.7
+    },
+    {
+      "rank": 6,
+      "product": "smart fabric jacket",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 212.2
+    },
+    {
+      "rank": 7,
+      "product": "smart fabric jacket",
+      "color": "Viva Magenta",
+      "hex": "#BB2649",
+      "synergy_score": 174.0
+    },
+    {
+      "rank": 8,
+      "product": "smart fabric jacket",
+      "color": "Ocean Teal",
+      "hex": "#008080",
+      "synergy_score": 173.3
+    },
+    {
+      "rank": 9,
+      "product": "shrug top",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 169.9
+    },
+    {
+      "rank": 10,
+      "product": "hemp blend jeans",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 164.9
+    },
+    {
+      "rank": 11,
+      "product": "smart fabric jacket",
+      "color": "Cyber Grape",
+      "hex": "#58427C",
+      "synergy_score": 160.7
+    },
+    {
+      "rank": 12,
+      "product": "smart fabric jacket",
+      "color": "Chocolate Brown",
+      "hex": "#7B3F00",
+      "synergy_score": 156.6
+    },
+    {
+      "rank": 13,
+      "product": "shrug top",
+      "color": "Viva Magenta",
+      "hex": "#BB2649",
+      "synergy_score": 135.6
+    },
+    {
+      "rank": 14,
+      "product": "shrug top",
+      "color": "Ocean Teal",
+      "hex": "#008080",
+      "synergy_score": 134.8
+    },
+    {
+      "rank": 15,
+      "product": "mob wife fur coat",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 130.8
+    },
+    {
+      "rank": 16,
+      "product": "hemp blend jeans",
+      "color": "Viva Magenta",
+      "hex": "#BB2649",
+      "synergy_score": 127.3
+    },
+    {
+      "rank": 17,
+      "product": "hemp blend jeans",
+      "color": "Ocean Teal",
+      "hex": "#008080",
+      "synergy_score": 126.5
+    },
+    {
+      "rank": 18,
+      "product": "barrel leg pants",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 126.4
+    },
+    {
+      "rank": 19,
+      "product": "unisex oversized shirt",
+      "color": "Chrome Gold",
+      "hex": "#D4AF37",
+      "synergy_score": 125.1
+    },
+    {
+      "rank": 20,
+      "product": "shrug top",
+      "color": "Cyber Grape",
+      "hex": "#58427C",
+      "synergy_score": 122.3
+    }
+  ],
+  "categories": {
+    "sustainable": [
+      {
+        "product": "mushroom leather jacket",
+        "color": "Chrome Gold",
+        "score": 305.94266466146024
+      },
+      {
+        "product": "mushroom leather jacket",
+        "color": "Viva Magenta",
+        "score": 255.52404570370481
+      },
+      {
+        "product": "mushroom leather jacket",
+        "color": "Ocean Teal",
+        "score": 254.6443062446333
+      },
+      {
+        "product": "mushroom leather jacket",
+        "color": "Cyber Grape",
+        "score": 239.57682007632025
+      },
+      {
+        "product": "mushroom leather jacket",
+        "color": "Chocolate Brown",
+        "score": 234.65735258334857
+      }
+    ],
+    "tech_integrated": [
+      {
+        "product": "smart fabric jacket",
+        "color": "Chrome Gold",
+        "score": 212.15763978063035
+      },
+      {
+        "product": "smart fabric jacket",
+        "color": "Viva Magenta",
+        "score": 174.03254041619053
+      },
+      {
+        "product": "smart fabric jacket",
+        "color": "Ocean Teal",
+        "score": 173.2994242002976
+      },
+      {
+        "product": "smart fabric jacket",
+        "color": "Cyber Grape",
+        "score": 160.74318572670336
+      },
+      {
+        "product": "smart fabric jacket",
+        "color": "Chocolate Brown",
+        "score": 156.6436294825603
+      }
+    ],
+    "viral_aesthetics": [
+      {
+        "product": "mob wife fur coat",
+        "color": "Chrome Gold",
+        "score": 130.7916058148293
+      },
+      {
+        "product": "mob wife fur coat",
+        "color": "Viva Magenta",
+        "score": 100.06341862909866
+      },
+      {
+        "product": "mob wife fur coat",
+        "color": "Ocean Teal",
+        "score": 99.33030241320573
+      },
+      {
+        "product": "mob wife fur coat",
+        "color": "Cyber Grape",
+        "score": 86.7740639396115
+      },
+      {
+        "product": "mob wife fur coat",
+        "color": "Chocolate Brown",
+        "score": 82.67450769546845
+      }
+    ]
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-01-16T05:04:27.109806",
+  "forecast_period": "Spring/Summer 2026 (Jan-Jul)",
+  "top_products": [
+    {
+      "rank": 1,
+      "product": "halter top",
+      "growth": 49.25786252100911
+    },
+    {
+      "rank": 2,
+      "product": "sundress",
+      "growth": 43.40530229337889
+    },
+    {
+      "rank": 3,
+      "product": "crochet dress",
+      "growth": 35.087359592826814
+    },
+    {
+      "rank": 4,
+      "product": "linen dress",
+      "growth": 30.001387470445124
+    },
+    {
+      "rank": 5,
+      "product": "espadrilles",
+      "growth": 27.716904297902
+    },
+    {
+      "rank": 6,
+      "product": "bermuda shorts",
+      "growth": 25.309630274911555
+    },
+    {
+      "rank": 7,
+      "product": "denim shorts",
+      "growth": 15.772969400260523
+    },
+    {
+      "rank": 8,
+      "product": "palazzo pants",
+      "growth": 15.273790397982486
+    },
+    {
+      "rank": 9,
+      "product": "crop top",
+      "growth": 12.503573772663687
+    },
+    {
+      "rank": 10,
+      "product": "linen shirt",
+      "growth": 12.10738580013175
+    }
+  ],
+  "top_colors": [
+    {
+      "rank": 1,
+      "color": "Digital Lavender",
+      "growth": 32.383166923380465
+    },
+    {
+      "rank": 2,
+      "color": "Butter Yellow",
+      "growth": 17.731302111117547
+    },
+    {
+      "rank": 3,
+      "color": "Terracotta",
+      "growth": 12.91921190462838
+    },
+    {
+      "rank": 4,
+      "color": "Cherry Red",
+      "growth": 8.273240553647074
+    },
+    {
+      "rank": 5,
+      "color": "Espresso Brown",
+      "growth": 4.633581817393535
+    },
+    {
+      "rank": 6,
+      "color": "Sage Green",
+      "growth": 2.0731613420230586
+    },
+    {
+      "rank": 7,
+      "color": "Cobalt Blue",
+      "growth": -7.371970685837239
+    }
+  ],
+  "recommendations": [
+    {
+      "product": "halter top",
+      "color": "Digital Lavender",
+      "growth": 44.90256619441427
+    },
+    {
+      "product": "sundress",
+      "color": "Digital Lavender",
+      "growth": 41.68365806921765
+    },
+    {
+      "product": "crochet dress",
+      "color": "Digital Lavender",
+      "growth": 37.10878958391401
+    },
+    {
+      "product": "linen dress",
+      "color": "Digital Lavender",
+      "growth": 34.31150491660408
+    },
+    {
+      "product": "espadrilles",
+      "color": "Digital Lavender",
+      "growth": 33.05503917170536
+    }
+  ]
+}
