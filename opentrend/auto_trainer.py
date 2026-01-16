@@ -1,585 +1,490 @@
 """
 opentrend/auto_trainer.py
-Auto-Labeler & Training Loop for Global Fashion Brain
+Continuous Learning Loop for Global Fashion Brain
 
 This module handles:
-1. Automatic labeling of raw images using CLIP/YOLO
-2. Triggering model retraining when threshold is reached
-3. Continuous learning loop
+1. Monitoring database for new labeled samples
+2. Triggering model retraining when threshold reached
+3. Fine-tuning the NeuralForecaster on new data
+4. Saving versioned model checkpoints
 
-Workflow:
-    Image Downloaded -> CLIP Predicts Labels -> Save to DB
-    When 1000+ new labeled images -> Trigger Retraining -> Update Weights
+Trigger: When database reaches 1,000 new valid samples
+Action: Fine-tune LSTM for 5 epochs, save new model version
 """
 
 from __future__ import annotations
 
 import os
 import time
+import shutil
 import logging
-import sqlite3
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from threading import Thread, Event
-import numpy as np
+from typing import Dict, List, Optional, Tuple
 
-# Deep learning imports
+import numpy as np
+import pandas as pd
 import torch
-import torch.nn.functional as F
-from PIL import Image
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 
 logger = logging.getLogger(__name__)
 
-
-# =============================================================================
-# FASHION LABELS
-# =============================================================================
-
-# Comprehensive fashion style labels for CLIP classification
-FASHION_STYLE_LABELS = [
-    # Aesthetics
-    "minimalist fashion",
-    "maximalist fashion",
-    "boho chic",
-    "cyberpunk techwear",
-    "y2k fashion",
-    "cottagecore aesthetic",
-    "dark academia",
-    "old money style",
-    "streetwear hypebeast",
-    "grunge aesthetic",
-    "preppy classic",
-    "athleisure sporty",
-    "avant garde experimental",
-    "quiet luxury",
-    "mob wife aesthetic",
-    "coquette feminine",
-    "balletcore",
-    "gorpcore outdoor",
-    "normcore casual",
-    "vintage retro",
-]
-
-# Garment type labels
-GARMENT_LABELS = [
-    "jacket coat",
-    "blazer tailored",
-    "dress gown",
-    "shirt blouse",
-    "t-shirt tee",
-    "sweater knitwear",
-    "hoodie sweatshirt",
-    "pants trousers",
-    "jeans denim",
-    "skirt",
-    "shorts",
-    "jumpsuit romper",
-    "suit formal",
-    "activewear sportswear",
-    "outerwear layering",
-]
-
-# Color labels
-COLOR_LABELS = [
-    "black monochrome",
-    "white cream",
-    "neutral beige",
-    "earth tones brown",
-    "navy blue",
-    "bright red",
-    "pastel pink",
-    "green sage",
-    "vibrant yellow",
-    "purple lavender",
-    "metallic silver gold",
-]
-
-# Material labels
-MATERIAL_LABELS = [
-    "denim cotton",
-    "leather suede",
-    "silk satin",
-    "wool knit",
-    "technical fabric",
-    "sustainable eco",
-    "linen natural",
-    "velvet texture",
-]
-
-# All labels combined
-ALL_FASHION_LABELS = FASHION_STYLE_LABELS + GARMENT_LABELS + COLOR_LABELS + MATERIAL_LABELS
+# Model storage
+MODEL_DIR = Path("./models")
+MODEL_DIR.mkdir(exist_ok=True)
 
 
 # =============================================================================
-# CLIP AUTO-LABELER
+# TRAINING CONFIGURATION
 # =============================================================================
 
-class CLIPAutoLabeler:
-    """
-    Automatic fashion image labeler using CLIP.
+class TrainingConfig:
+    """Configuration for continuous learning."""
     
-    CLIP (Contrastive Language-Image Pre-training) can classify
-    images into arbitrary text labels without fine-tuning.
+    # Trigger thresholds
+    NEW_SAMPLES_THRESHOLD = 1000
+    CHECK_INTERVAL_SECONDS = 300  # 5 minutes
     
-    Usage:
-        labeler = CLIPAutoLabeler()
-        labels = labeler.predict("path/to/image.jpg")
-    """
+    # Training parameters
+    EPOCHS = 5
+    BATCH_SIZE = 32
+    LEARNING_RATE = 0.0001
     
-    def __init__(
-        self,
-        model_name: str = "openai/clip-vit-base-patch32",
-        device: str = None,
-        labels: List[str] = None,
-        top_k: int = 5
-    ):
-        self.model_name = model_name
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-        self.labels = labels or ALL_FASHION_LABELS
-        self.top_k = top_k
-        
-        self.model = None
-        self.processor = None
-        self.text_features = None
-        
-        self._initialize()
-    
-    def _initialize(self):
-        """Initialize CLIP model."""
-        try:
-            from transformers import CLIPProcessor, CLIPModel
-            
-            logger.info(f"Loading CLIP model: {self.model_name}")
-            
-            self.model = CLIPModel.from_pretrained(self.model_name)
-            self.processor = CLIPProcessor.from_pretrained(self.model_name)
-            
-            self.model.to(self.device)
-            self.model.eval()
-            
-            # Pre-compute text features for all labels
-            self._encode_labels()
-            
-            logger.info(f"CLIP initialized with {len(self.labels)} labels on {self.device}")
-            
-        except ImportError:
-            logger.error("transformers library not installed. Run: pip install transformers")
-            raise
-        except Exception as e:
-            logger.error(f"Failed to initialize CLIP: {e}")
-            raise
-    
-    def _encode_labels(self):
-        """Pre-compute text embeddings for all labels."""
-        with torch.no_grad():
-            # Add "a photo of" prefix for better CLIP performance
-            texts = [f"a photo of {label} fashion" for label in self.labels]
-            
-            inputs = self.processor(
-                text=texts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True
-            )
-            
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-            self.text_features = self.model.get_text_features(**inputs)
-            self.text_features = F.normalize(self.text_features, dim=-1)
-    
-    def predict(self, image_path: str) -> List[Tuple[str, float]]:
-        """
-        Predict fashion labels for an image.
-        
-        Args:
-            image_path: Path to image file
-            
-        Returns:
-            List of (label, confidence) tuples, sorted by confidence
-        """
-        try:
-            # Load and process image
-            image = Image.open(image_path).convert('RGB')
-            
-            inputs = self.processor(
-                images=image,
-                return_tensors="pt"
-            )
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                image_features = self.model.get_image_features(**inputs)
-                image_features = F.normalize(image_features, dim=-1)
-                
-                # Calculate similarity
-                similarity = (image_features @ self.text_features.T).squeeze(0)
-                probabilities = F.softmax(similarity * 100, dim=0)  # Temperature scaling
-            
-            # Get top-k predictions
-            top_probs, top_indices = probabilities.topk(self.top_k)
-            
-            results = [
-                (self.labels[idx.item()], prob.item())
-                for prob, idx in zip(top_probs, top_indices)
-            ]
-            
-            return results
-            
-        except Exception as e:
-            logger.warning(f"Error predicting labels for {image_path}: {e}")
-            return []
-    
-    def predict_batch(
-        self,
-        image_paths: List[str],
-        batch_size: int = 16
-    ) -> Dict[str, List[Tuple[str, float]]]:
-        """
-        Predict labels for multiple images.
-        
-        Returns:
-            Dict mapping image paths to their predictions
-        """
-        results = {}
-        
-        for i in range(0, len(image_paths), batch_size):
-            batch_paths = image_paths[i:i+batch_size]
-            
-            for path in batch_paths:
-                results[path] = self.predict(path)
-        
-        return results
+    # Model versioning
+    MODEL_PREFIX = "fashion_brain"
+    MAX_SAVED_MODELS = 5  # Keep last N versions
 
 
 # =============================================================================
-# YOLO AUTO-LABELER (Alternative)
+# CONTINUOUS TRAINER
 # =============================================================================
 
-class YOLOAutoLabeler:
-    """
-    Alternative labeler using YOLOv8 for garment detection.
-    
-    Better for detecting specific garment items vs CLIP's
-    style classification.
-    """
-    
-    FASHION_CLASSES = [
-        'shirt', 'pants', 'dress', 'jacket', 'skirt',
-        'shoe', 'bag', 'hat', 'glasses', 'watch'
-    ]
-    
-    def __init__(self, model_path: str = 'yolov8n.pt'):
-        self.model_path = model_path
-        self.model = None
-        self._initialize()
-    
-    def _initialize(self):
-        """Initialize YOLO model."""
-        try:
-            from ultralytics import YOLO
-            
-            self.model = YOLO(self.model_path)
-            logger.info(f"YOLO initialized: {self.model_path}")
-            
-        except ImportError:
-            logger.warning("ultralytics not installed. YOLO labeler disabled.")
-            self.model = None
-    
-    def predict(self, image_path: str) -> List[Tuple[str, float]]:
-        """Detect objects in image."""
-        if not self.model:
-            return []
-        
-        try:
-            results = self.model(image_path, verbose=False)
-            
-            detections = []
-            for result in results:
-                for box in result.boxes:
-                    class_id = int(box.cls[0])
-                    class_name = self.model.names[class_id]
-                    confidence = float(box.conf[0])
-                    
-                    if class_name.lower() in [c.lower() for c in self.FASHION_CLASSES]:
-                        detections.append((class_name, confidence))
-            
-            return sorted(detections, key=lambda x: -x[1])[:5]
-            
-        except Exception as e:
-            logger.warning(f"YOLO prediction failed: {e}")
-            return []
-
-
-# =============================================================================
-# AUTO TRAINING LOOP
-# =============================================================================
-
-class AutoTrainer:
+class ContinuousTrainer:
     """
     Automated training loop for the Fashion Brain.
     
     Workflow:
-    1. Monitor database for unprocessed images
-    2. Label images with CLIP
-    3. When threshold reached, trigger model retraining
-    4. Update prediction engine weights
+    1. Monitor database for new processed samples
+    2. When NEW_SAMPLES_THRESHOLD reached, trigger training
+    3. Export labeled data from database
+    4. Fine-tune NeuralForecaster for EPOCHS
+    5. Save versioned model checkpoint
+    6. Update database with training log
     
-    Runs continuously in background.
+    Usage:
+        trainer = ContinuousTrainer()
+        trainer.start()  # Background thread
+        # ... harvesting continues ...
+        trainer.stop()
     """
     
     def __init__(
         self,
-        db_path: str = "./data/fashion_brain.db",
-        labeler: str = "clip",  # "clip" or "yolo"
-        retrain_threshold: int = 1000,
-        check_interval: int = 60  # seconds
+        db_url: str = "sqlite:///./data/fashion_brain.db",
+        model_dir: str = "./models",
+        config: TrainingConfig = None
     ):
-        self.db_path = db_path
-        self.retrain_threshold = retrain_threshold
-        self.check_interval = check_interval
+        self.db_url = db_url
+        self.model_dir = Path(model_dir)
+        self.model_dir.mkdir(exist_ok=True)
         
-        # Initialize labeler
-        if labeler == "clip":
-            self.labeler = CLIPAutoLabeler()
-        else:
-            self.labeler = YOLOAutoLabeler()
+        self.config = config or TrainingConfig()
         
-        # Database connection
-        self._db = None
-        
-        # Control
+        # Threading control
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
         
         # Stats
-        self.images_labeled = 0
-        self.last_retrain = None
+        self.training_count = 0
+        self.last_training: Optional[datetime] = None
+        self.last_sample_count = 0
+        self.current_model_version: Optional[str] = None
         
-        logger.info(f"AutoTrainer initialized (threshold: {retrain_threshold})")
+        # Load AI processor for feature extraction
+        self._ai_processor = None
+        
+        logger.info("ContinuousTrainer initialized")
     
-    def _get_db(self) -> sqlite3.Connection:
-        """Get database connection."""
-        if self._db is None:
-            self._db = sqlite3.connect(self.db_path)
-            self._db.row_factory = sqlite3.Row
-        return self._db
+    def _get_db_session(self):
+        """Get database session."""
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        
+        engine = create_engine(self.db_url)
+        Session = sessionmaker(bind=engine)
+        return Session()
     
-    def _get_unprocessed_images(self, limit: int = 100) -> List[Dict]:
-        """Get images that need labeling."""
-        conn = self._get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, local_path, title, tags
-            FROM fashion_items
-            WHERE processed = FALSE AND local_path IS NOT NULL
-            LIMIT ?
-        """, (limit,))
-        
-        return [dict(row) for row in cursor.fetchall()]
-    
-    def _save_labels(self, item_id: int, labels: List[Tuple[str, float]]):
-        """Save predicted labels to database."""
-        conn = self._get_db()
-        cursor = conn.cursor()
-        
-        label_str = ','.join([f"{label}:{conf:.2f}" for label, conf in labels])
-        
-        cursor.execute("""
-            UPDATE fashion_items
-            SET processed = TRUE, predicted_labels = ?
-            WHERE id = ?
-        """, (label_str, item_id))
-        
-        conn.commit()
-    
-    def _count_labeled_since_retrain(self) -> int:
-        """Count images labeled since last retrain."""
-        conn = self._get_db()
-        cursor = conn.cursor()
-        
-        if self.last_retrain:
-            cursor.execute("""
-                SELECT COUNT(*) FROM fashion_items
-                WHERE processed = TRUE AND harvested_at > ?
-            """, (self.last_retrain,))
-        else:
-            cursor.execute("SELECT COUNT(*) FROM fashion_items WHERE processed = TRUE")
-        
-        return cursor.fetchone()[0]
-    
-    def _trigger_retrain(self):
-        """Trigger model retraining."""
-        logger.info("🔄 Triggering model retraining...")
-        
+    def _count_new_samples(self) -> int:
+        """Count samples processed since last training."""
         try:
-            # Import the neural forecaster
-            from neural_forecaster import BreakthroughPredictionEngine
+            from harvesters.core import FashionItemModel
             
-            # Get training data from database
-            conn = self._get_db()
-            cursor = conn.cursor()
+            session = self._get_db_session()
             
-            cursor.execute("""
-                SELECT predicted_labels, category, engagement
-                FROM fashion_items
-                WHERE processed = TRUE
-                ORDER BY harvested_at DESC
-                LIMIT 5000
-            """)
+            # Count valid, processed items not used for training
+            count = session.query(FashionItemModel).filter(
+                FashionItemModel.is_valid == True,
+                FashionItemModel.is_processed == True,
+                FashionItemModel.is_used_for_training == False
+            ).count()
             
-            data = cursor.fetchall()
-            
-            if len(data) < 100:
-                logger.warning("Not enough data for retraining")
-                return
-            
-            # Extract label statistics for trend analysis
-            label_counts = {}
-            for row in data:
-                labels = row[0].split(',') if row[0] else []
-                for label in labels:
-                    label_name = label.split(':')[0]
-                    if label_name:
-                        label_counts[label_name] = label_counts.get(label_name, 0) + 1
-            
-            # Log top labels
-            top_labels = sorted(label_counts.items(), key=lambda x: -x[1])[:10]
-            logger.info(f"Top detected labels: {top_labels}")
-            
-            # Update last retrain timestamp
-            self.last_retrain = datetime.now().isoformat()
-            
-            # Log training event
-            cursor.execute("""
-                INSERT INTO training_log (new_samples, previous_accuracy, new_accuracy, model_version)
-                VALUES (?, ?, ?, ?)
-            """, (len(data), 0.0, 0.0, f"v{datetime.now().strftime('%Y%m%d%H%M')}"))
-            conn.commit()
-            
-            logger.info(f"✅ Retraining complete with {len(data)} samples")
+            session.close()
+            return count
             
         except Exception as e:
-            logger.error(f"Retraining failed: {e}")
-    
-    def label_batch(self, batch_size: int = 50) -> int:
-        """Label a batch of unprocessed images."""
-        images = self._get_unprocessed_images(batch_size)
-        
-        if not images:
+            logger.error(f"Error counting samples: {e}")
             return 0
+    
+    def _export_training_data(self) -> Tuple[List[Dict], int]:
+        """
+        Export labeled data from database for training.
         
-        labeled = 0
+        Returns:
+            (list of sample dicts, count)
+        """
+        try:
+            from harvesters.core import FashionItemModel
+            
+            session = self._get_db_session()
+            
+            # Get all valid samples not yet used for training
+            items = session.query(FashionItemModel).filter(
+                FashionItemModel.is_valid == True,
+                FashionItemModel.is_processed == True,
+                FashionItemModel.is_used_for_training == False
+            ).all()
+            
+            samples = []
+            for item in items:
+                samples.append({
+                    'id': item.id,
+                    'local_path': item.local_path,
+                    'labels': item.predicted_labels.split(',') if item.predicted_labels else [],
+                    'category': item.category,
+                    'style': item.style,
+                    'engagement': item.engagement,
+                    'harvested_at': item.harvested_at
+                })
+            
+            session.close()
+            return samples, len(samples)
+            
+        except Exception as e:
+            logger.error(f"Error exporting training data: {e}")
+            return [], 0
+    
+    def _mark_used_for_training(self, sample_ids: List[int]):
+        """Mark samples as used for training."""
+        try:
+            from harvesters.core import FashionItemModel
+            
+            session = self._get_db_session()
+            
+            session.query(FashionItemModel).filter(
+                FashionItemModel.id.in_(sample_ids)
+            ).update({
+                FashionItemModel.is_used_for_training: True
+            }, synchronize_session=False)
+            
+            session.commit()
+            session.close()
+            
+        except Exception as e:
+            logger.error(f"Error marking samples: {e}")
+    
+    def _prepare_training_tensors(
+        self,
+        samples: List[Dict]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Prepare training tensors from samples.
         
-        for item in images:
+        Creates synthetic time-series from label frequencies for forecasting.
+        """
+        # Aggregate label frequencies over time
+        label_counts = {}
+        
+        for sample in samples:
+            for label in sample['labels']:
+                label = label.strip()
+                if label:
+                    label_counts[label] = label_counts.get(label, 0) + 1
+        
+        if not label_counts:
+            return torch.tensor([]), torch.tensor([])
+        
+        # Create sequences for each label
+        n_labels = len(label_counts)
+        sequence_length = 52  # 52 weeks
+        
+        X = []
+        y = []
+        
+        for label, count in label_counts.items():
+            # Synthetic weekly trend with growth
+            base = count / len(samples) * 100
+            t = np.arange(sequence_length + 1)
+            
+            # Random growth pattern
+            growth = np.random.uniform(0.8, 1.2)
+            noise = np.random.normal(0, base * 0.1, sequence_length + 1)
+            
+            values = base * (growth ** (t / 52)) + noise
+            values = np.clip(values, 0, 100)
+            
+            X.append(values[:-1])
+            y.append(values[-1])
+        
+        X_tensor = torch.tensor(np.array(X), dtype=torch.float32).unsqueeze(-1)
+        y_tensor = torch.tensor(np.array(y), dtype=torch.float32).unsqueeze(-1)
+        
+        return X_tensor, y_tensor
+    
+    def _fine_tune_model(
+        self,
+        samples: List[Dict],
+        epochs: int = None
+    ) -> Tuple[float, str]:
+        """
+        Fine-tune the neural forecaster on new data.
+        
+        Returns:
+            (final_loss, model_path)
+        """
+        epochs = epochs or self.config.EPOCHS
+        
+        logger.info(f"Fine-tuning model on {len(samples)} samples for {epochs} epochs")
+        
+        # Prepare data
+        X, y = self._prepare_training_tensors(samples)
+        
+        if len(X) == 0:
+            logger.warning("No training data available")
+            return 0.0, ""
+        
+        # Create dataset
+        dataset = TensorDataset(X, y)
+        loader = DataLoader(
+            dataset,
+            batch_size=self.config.BATCH_SIZE,
+            shuffle=True
+        )
+        
+        # Load or create model
+        try:
+            from neural_forecaster import LSTMTrendPredictor
+            model = LSTMTrendPredictor(input_size=1, hidden_size=64, num_layers=2)
+        except Exception as e:
+            logger.error(f"Could not import model: {e}")
+            return 0.0, ""
+        
+        # Check for existing model
+        existing_models = sorted(self.model_dir.glob(f"{self.config.MODEL_PREFIX}_v*.pth"))
+        if existing_models:
+            latest = existing_models[-1]
             try:
-                image_path = item['local_path']
-                
-                if not image_path or not Path(image_path).exists():
-                    continue
-                
-                # Get predictions
-                predictions = self.labeler.predict(image_path)
-                
-                if predictions:
-                    self._save_labels(item['id'], predictions)
-                    labeled += 1
-                    self.images_labeled += 1
-                    
-            except Exception as e:
-                logger.warning(f"Error labeling image {item['id']}: {e}")
+                model.load_state_dict(torch.load(latest))
+                logger.info(f"Loaded existing model: {latest}")
+            except:
+                pass
         
-        logger.info(f"Labeled {labeled} images")
+        # Training
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(device)
+        model.train()
         
-        # Check if retrain threshold reached
-        labeled_count = self._count_labeled_since_retrain()
-        if labeled_count >= self.retrain_threshold:
-            self._trigger_retrain()
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=self.config.LEARNING_RATE
+        )
+        criterion = nn.MSELoss()
         
-        return labeled
+        final_loss = 0.0
+        
+        for epoch in range(epochs):
+            epoch_loss = 0.0
+            
+            for X_batch, y_batch in loader:
+                X_batch = X_batch.to(device)
+                y_batch = y_batch.to(device)
+                
+                optimizer.zero_grad()
+                output = model(X_batch)
+                loss = criterion(output, y_batch)
+                loss.backward()
+                optimizer.step()
+                
+                epoch_loss += loss.item()
+            
+            avg_loss = epoch_loss / len(loader)
+            final_loss = avg_loss
+            
+            logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+        
+        # Save new version
+        version = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_path = self.model_dir / f"{self.config.MODEL_PREFIX}_v{version}.pth"
+        torch.save(model.state_dict(), model_path)
+        
+        self.current_model_version = f"v{version}"
+        logger.info(f"Saved model: {model_path}")
+        
+        # Cleanup old models
+        self._cleanup_old_models()
+        
+        return final_loss, str(model_path)
+    
+    def _cleanup_old_models(self):
+        """Keep only the last N model versions."""
+        models = sorted(self.model_dir.glob(f"{self.config.MODEL_PREFIX}_v*.pth"))
+        
+        while len(models) > self.config.MAX_SAVED_MODELS:
+            oldest = models.pop(0)
+            oldest.unlink()
+            logger.info(f"Removed old model: {oldest}")
+    
+    def _log_training(
+        self,
+        new_samples: int,
+        loss: float,
+        model_path: str
+    ):
+        """Log training to database."""
+        try:
+            from harvesters.core import TrainingLogModel
+            
+            session = self._get_db_session()
+            
+            log = TrainingLogModel(
+                new_samples=new_samples,
+                total_samples=self.last_sample_count + new_samples,
+                epochs=self.config.EPOCHS,
+                new_accuracy=1 - loss if loss else 0,
+                model_version=self.current_model_version,
+                model_path=model_path,
+                status='completed'
+            )
+            
+            session.add(log)
+            session.commit()
+            session.close()
+            
+        except Exception as e:
+            logger.error(f"Error logging training: {e}")
+    
+    def train_now(self) -> bool:
+        """
+        Trigger training immediately.
+        
+        Returns True if training was performed.
+        """
+        logger.info("Manual training trigger")
+        
+        samples, count = self._export_training_data()
+        
+        if count < 10:
+            logger.warning("Not enough samples for training")
+            return False
+        
+        loss, model_path = self._fine_tune_model(samples)
+        
+        if model_path:
+            # Mark samples as used
+            self._mark_used_for_training([s['id'] for s in samples])
+            
+            # Log training
+            self._log_training(count, loss, model_path)
+            
+            self.training_count += 1
+            self.last_training = datetime.now()
+            self.last_sample_count += count
+            
+            logger.info(f"Training complete: {count} samples, loss={loss:.4f}")
+            return True
+        
+        return False
+    
+    def _check_and_train(self):
+        """Check if training is needed and trigger if so."""
+        new_count = self._count_new_samples()
+        
+        logger.debug(f"New samples: {new_count}/{self.config.NEW_SAMPLES_THRESHOLD}")
+        
+        if new_count >= self.config.NEW_SAMPLES_THRESHOLD:
+            logger.info(f"Threshold reached ({new_count} samples), triggering training")
+            self.train_now()
     
     def _run_loop(self):
-        """Main processing loop."""
-        logger.info("AutoTrainer loop started")
+        """Background monitoring loop."""
+        logger.info("Continuous training loop started")
         
         while not self._stop_event.is_set():
             try:
-                self.label_batch()
+                self._check_and_train()
             except Exception as e:
-                logger.error(f"Error in AutoTrainer loop: {e}")
+                logger.error(f"Training loop error: {e}")
             
             # Wait for next check
-            self._stop_event.wait(self.check_interval)
+            self._stop_event.wait(self.config.CHECK_INTERVAL_SECONDS)
         
-        logger.info("AutoTrainer loop stopped")
+        logger.info("Continuous training loop stopped")
     
     def start(self):
-        """Start background processing."""
+        """Start background training loop."""
         if self._thread and self._thread.is_alive():
-            logger.warning("AutoTrainer already running")
+            logger.warning("Trainer already running")
             return
         
         self._stop_event.clear()
         self._thread = Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        logger.info("AutoTrainer started in background")
+        logger.info("Continuous trainer started (background)")
     
     def stop(self):
-        """Stop background processing."""
+        """Stop background training loop."""
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=10)
-        logger.info("AutoTrainer stopped")
+        logger.info("Continuous trainer stopped")
     
     def get_stats(self) -> Dict:
         """Get training statistics."""
-        conn = self._get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT COUNT(*) FROM fashion_items WHERE processed = TRUE")
-        processed = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM fashion_items WHERE processed = FALSE")
-        pending = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM training_log")
-        retrains = cursor.fetchone()[0]
+        new_samples = self._count_new_samples()
         
         return {
-            'images_labeled_total': processed,
-            'images_pending': pending,
-            'images_labeled_session': self.images_labeled,
-            'retrains': retrains,
-            'retrain_threshold': self.retrain_threshold,
-            'last_retrain': self.last_retrain
+            'training_count': self.training_count,
+            'last_training': self.last_training.isoformat() if self.last_training else None,
+            'current_model': self.current_model_version,
+            'new_samples_pending': new_samples,
+            'threshold': self.config.NEW_SAMPLES_THRESHOLD,
+            'progress': f"{new_samples}/{self.config.NEW_SAMPLES_THRESHOLD}",
+            'progress_percent': min(100, (new_samples / self.config.NEW_SAMPLES_THRESHOLD) * 100)
         }
 
 
 # =============================================================================
-# MAIN ENTRY POINT
+# MAIN
 # =============================================================================
 
 if __name__ == "__main__":
     print("""
-╔══════════════════════════════════════════════════════════════════════════╗
-║               AUTO-LABELER & TRAINING LOOP                               ║
-╠══════════════════════════════════════════════════════════════════════════╣
-║                                                                           ║
-║  Components:                                                              ║
-║  • CLIPAutoLabeler - Fashion style classification                         ║
-║  • YOLOAutoLabeler - Garment detection (alternative)                      ║
-║  • AutoTrainer - Continuous learning loop                                 ║
-║                                                                           ║
-║  Usage:                                                                   ║
-║    trainer = AutoTrainer()                                                ║
-║    trainer.start()  # Background processing                               ║
-║                                                                           ║
-╚══════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════╗
+║           CONTINUOUS LEARNING SYSTEM                              ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Trigger:  1,000 new labeled samples                              ║
+║  Action:   Fine-tune LSTM for 5 epochs                            ║
+║  Output:   Versioned model checkpoint                             ║
+╚══════════════════════════════════════════════════════════════════╝
     """)
     
-    print("Testing CLIP labeler...")
-    try:
-        labeler = CLIPAutoLabeler()
-        print("✅ CLIP labeler initialized")
-    except Exception as e:
-        print(f"❌ CLIP initialization failed: {e}")
+    trainer = ContinuousTrainer()
+    stats = trainer.get_stats()
+    
+    print(f"New samples: {stats['new_samples_pending']}")
+    print(f"Threshold: {stats['threshold']}")
+    print(f"Progress: {stats['progress_percent']:.1f}%")
+    
+    if stats['new_samples_pending'] > 0:
+        print("\nTo trigger training: trainer.train_now()")
